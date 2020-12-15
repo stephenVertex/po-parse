@@ -1,3 +1,5 @@
 requests
 tabula-py
 boto3
+rich
+

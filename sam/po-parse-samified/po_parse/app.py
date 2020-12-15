@@ -6,6 +6,7 @@ import tabula
 import os
 from collections import OrderedDict
 import urllib.parse
+from rich import print
 
 print('Loading function')
 
@@ -123,11 +124,18 @@ def lambda_handler(event, context):
     #     raise e
 
     
+    print("--------------------")
+    print("EVENT")
+    print(event)
+    print("--------------------")
+    print("CONTEXT")
+    print(context)
 
     return {
         "statusCode": 200,
         "body": json.dumps({
             "message": "hello world",
             # "location": ip.text.replace("\n", "")
+            "commentary" : "SAM is great"
         }),
     }
