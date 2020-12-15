@@ -1,0 +1,124 @@
+* Purchase Order Parser
+
+  See: https://app.clickup.com/t/2pqv0u for tracking.
+
+  Note that we are interested in parsing a purchase order as given in the [[./faktura-117044.pdf][sample data]].
+  
+
+* AWS
+
+  In terms of operationalisation, the purchase order will be put in an S3 bucket.
+  The parser will be put in a trigger function.
+  The trigger function will have the following steps:
+
+  1. sha256sum the file
+  2. attempt to parse the file:
+     1. If successful, put the parsed data in:
+	1. An SQS queue
+	2. A graphQL API if we have the endpoints to do so (based on environment variable)
+	3. Transfer the file to =s3://{some-bucket}/successful-po-parses/{some-name}.pdf=
+	4. Save the tuple URI, sha256, po-number in some other database / SQS queue
+	   
+     2. Else:
+	1. Error the SQS queue
+	2. Transfer the file to =s3://{some-bucket}/failed-po-parses/{some-name}.pdf=
+
+
+
+* Worklog
+
+** Create the S3 Bucket
+   
+   From the S3 console, I have created an S3 bucket.
+
+   *URI:* =s3://bredal-australia-internal=
+   
+   
+** Creating the Lambda trigger function
+   
+   
+   Using the Lambda function console.
+
+
+   - "S3 trigger":
+     - Bucket: bredal-australia-internal
+     - Event type: All object create events
+     - Prefix: purchase-orders/ingest/
+     - Suffix: *.pdf
+
+
+   We are given the skeleton of a function that we can edit in the online editor.
+   However, we need to package up the tabula dependency,.
+
+   First, we create a new virtual environment for Python 3.8 (my local default is Python 3.9)
+
+   #+begin_src bash
+   virtualenv -p python3.8 new_p38_env
+   cat new_p38_env/bin/activate
+   source new_p38_env/bin/activate
+   #+end_src
+
+   
+
+
+   Install the prerequisites inside the venv
+   #+begin_src bash
+(new_p38_env) [stephen@idkfa lambda-fn]$ pwd
+/home/stephen/dev/cli/bredal/po-parse/lambda-fn
+(new_p38_env) [stephen@idkfa lambda-fn]$ pip3 install tabula
+Collecting tabula
+  Downloading tabula-1.0.5.tar.gz (9.5 kB)
+Requirement already satisfied: setuptools in ./new_p38_env/lib/python3.8/site-packages (from tabula) (50.3.2)
+Collecting numpy
+  Downloading numpy-1.19.4-cp38-cp38-manylinux2010_x86_64.whl (14.5 MB)
+     |████████████████████████████████| 14.5 MB 950 kB/s 
+Building wheels for collected packages: tabula
+  Building wheel for tabula (setup.py) ... done
+  Created wheel for tabula: filename=tabula-1.0.5-py3-none-any.whl size=10589 sha256=570b18c1c64cf09ce51ee57d937e44391ad100b2a79b9e746269ef8089847a65
+  Stored in directory: /home/stephen/.cache/pip/wheels/2e/51/35/aa182d12911ffd4045285cffccb0e130b74e9b0c083310c161
+Successfully built tabula
+Installing collected packages: numpy, tabulapip3 
+Successfully installed numpy-1.19.4 tabula-1.0.5
+WARNING: You are using pip version 20.2.4; however, version 20.3.1 is available.
+You should consider upgrading via the '/home/stephen/dev/cli/bredal/po-parse/lambda-fn/new_p38_env/bin/python -m pip install --upgrade pip' command.
+(new_p38_env) [stephen@idkfa lambda-fn]$ pip3 install pandas
+Collecting pandas
+  Downloading pandas-1.1.5-cp38-cp38-manylinux1_x86_64.whl (9.3 MB)
+     |████████████████████████████████| 9.3 MB 2.1 MB/s 
+Requirement already satisfied: numpy>=1.15.4 in ./new_p38_env/lib/python3.8/site-packages (from pandas) (1.19.4)
+Collecting pytz>=2017.2
+  Downloading pytz-2020.4-py2.py3-none-any.whl (509 kB)
+     |████████████████████████████████| 509 kB 4.9 MB/s 
+Collecting python-dateutil>=2.7.3
+  Downloading python_dateutil-2.8.1-py2.py3-none-any.whl (227 kB)
+     |████████████████████████████████| 227 kB 6.0 MB/s 
+Collecting six>=1.5
+  Using cached six-1.15.0-py2.py3-none-any.whl (10 kB)
+Installing collected packages: six, pytz, python-dateutil, pandas
+Successfully installed pandas-1.1.5 python-dateutil-2.8.1 pytz-2020.4 six-1.15.0
+WARNING: You are using pip version 20.2.4; however, version 20.3.1 is available.
+You should consider upgrading via the '/home/stephen/dev/cli/bredal/po-parse/lambda-fn/new_p38_env/bin/python -m pip install --upgrade pip' command.
+
+   #+end_src
+
+   Now, we are following : https://docs.aws.amazon.com/lambda/latest/dg/python-package.html
+   
+   Creating a deployment package
+
+   zip -r my-deployment-package.zip .
+
+   #+begin_src bash
+     [stephen@idkfa lambda-fn]$ pwd
+     /home/stephen/dev/cli/bredal/po-parse/lambda-fn
+     [stephen@idkfa lambda-fn]$ mv new_p38_env/lib/python3.8/site-packages/my-deployment-package.zip .
+     [stephen@idkfa lambda-fn]$ zip -g my-deployment-package.zip lambda_function.py 
+   #+end_src
+
+   
+
+   Finally, we can update the deployment package:
+   #+begin_src bash
+   aws --profile bredal2 lambda update-function-code --function-name bredal-po-parser --zip-file fileb://my-deployment-package.zip 
+   #+end_src
+
+
