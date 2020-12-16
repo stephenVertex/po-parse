@@ -1,0 +1,3 @@
+* Notes 
+
+  1. Still had to add the s3 role by hand

@@ -21,11 +21,15 @@ Resources:
       Handler: app.lambda_handler
       Runtime: python3.8
       Events:
+
+        ## DON'T USE THIS
         POParseAPISource:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /poparse
             Method: get
+
+        ## THIS IS THE ONLY SANE ENTRYPOINT TO THIS FUNCTION
         IngressS3BucketEvent:
           Type: S3
           Properties:
@@ -41,6 +45,32 @@ Resources:
                   - Name: suffix
                     Value: .pdf
               
+
+  ParseOutputDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      # QueueName: 'cdupload-dlq-queue.fifo'
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      DelaySeconds: 0
+      MaximumMessageSize: 262144 # 256KB
+      MessageRetentionPeriod: 1209600 # 14 Days
+      VisibilityTimeout: 180 # 3 minutes
+
+  ParseOutputQ:
+    Type: AWS::SQS::Queue
+    # DependsOn: ParseOutputDLQ
+    Properties:
+      # QueueName: 'cdupload-queue.fifo'
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      DelaySeconds: 0
+      MaximumMessageSize: 262144 # 256KB
+      MessageRetentionPeriod: 345600 # 4 Days
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ParseOutputDLQ.Arn
+        maxReceiveCount: 6
+      VisibilityTimeout: 300 # 5 minutes
               
 
 Outputs:
@@ -59,3 +89,7 @@ Outputs:
   IngressS3Bucket:
     Description: "ARN of S3 Bucket"
     Value: !GetAtt IngressS3Bucket.Arn
+    Export:
+      Name: IngressS3BucketArn
+  
+

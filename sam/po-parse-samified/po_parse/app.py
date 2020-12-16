@@ -12,6 +12,25 @@ print('Loading function')
 
 s3 = boto3.client('s3')
 
+
+def getSessionInfo(running_aws = True):
+    # CFT Stack Variables
+    # OUTPUT_KEYS = ['AmbraStepFunction']  # <-- Use the names set in template.yaml Outputs
+    stack_name = 'po-parse-samified'
+    stack_output = {}
+    if running_aws:
+        session = boto3.Session()
+    else:
+        session = boto3.Session(profile_name='bredal2')
+    cf_resource = session.resource('cloudformation')
+    stack = cf_resource.Stack(stack_name)
+    # Show raw stack outputs from CFT
+    print(f'Keys in output_object: {stack.outputs}')    
+    # Transform them into a map
+    for x in stack.outputs:
+        stack_output[x['OutputKey']] = x['OutputValue']
+    return(stack_output)
+
 def download_file_to_tmp(s3, bucket, key):
     ## Given a boto s3 client, download to s3
     fname = os.path.split(key)[1]
@@ -139,3 +158,21 @@ def lambda_handler(event, context):
             "commentary" : "SAM is great"
         }),
     }
+
+
+
+if __name__ == "__main__":
+    print("Running locally)"
+    
+    session = boto3.Session(profile_name='bredal2')
+    s3 = session.client('s3')
+    
+    
+    stack_outputs    = getSessionInfo(running_aws = False)
+    
+    SAMPLE_S3_BUCKET = "bredal-australia-internal"
+    SAMPLE_S3_KEY    = "purchase-orders/ingest/faktura-117044.pdf"
+
+    fpath = download_file_to_tmp(s3, SAMPLE_S3_BUCKET, SAMPLE_S3_KEY)
+    records = process_file(fpath)
+    print(records)
