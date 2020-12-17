@@ -15,12 +15,26 @@ ENDPOINT = "https://7yjbo3g1eh.execute-api.ap-southeast-2.amazonaws.com/Prod/po_
 def mkTable(proc_table):
     table = Table(show_header = True, header_style = "bold magenta")
     cols = ['no.', 'description', 'quantity', 'netweight']
+    col_options = { "no."         : set(['no.']),
+                    "description" : set(['description']),
+                    "quantity"    : set(['quantity', 'y']),
+                    "netweight"   : set(['netweight', 'weight'])
+                   }                    
+                   
     for c in cols:
         table.add_column(c)
-    for r in proc_table:
+    for r in proc_table:        
         arg_list = []
-        for c in cols:
-            arg_list.append(str(r[c]))
+        for c in cols:            
+            opts = col_options[c]
+            found_val = False
+            for cx in opts:
+                if cx in r.keys():
+                    arg_list.append(str(r[cx]))
+                    found_val = True
+                    break
+            if found_val == False:
+                arg_list.append('XXX')
         table.add_row(*arg_list)
     return(table)
 

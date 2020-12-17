@@ -160,8 +160,9 @@ def coalesce_tables(tables):
             fixweight = lambda x: float(x.replace(",", "."))
             
             
-            if rec['netweight'] is not None:
-                rec['netweight'] = fixweight(rec['netweight'])
+            if 'netweight' in rec.keys():
+                if rec['netweight'] is not None:
+                    rec['netweight'] = fixweight(rec['netweight'])
 
             if rec['no.'] is not None:
                 ## new record
