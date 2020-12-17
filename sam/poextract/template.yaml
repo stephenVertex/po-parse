@@ -8,7 +8,7 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 300
 
 Resources:
 
@@ -22,6 +22,8 @@ Resources:
       CodeUri: po_extract/
       Policies:
       - arn:aws:iam::aws:policy/AmazonTextractFullAccess
+      - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      Timeout: 300
       Handler: app.lambda_handler
       Runtime: python3.8
       Events:

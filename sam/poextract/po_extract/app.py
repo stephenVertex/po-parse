@@ -214,11 +214,11 @@ def lambda_handler(event, context):
 
     return rval
 if __name__ == "__main__":
-    event = {'body' : json.dumps( {
-        's3_bucket_name': 'po-extract-ingresspos3bucket-14xl4r5co34p1',
-        's3_key_name': 'incoming/faktura-117044.pdf',
-        'graphql_api_endpoint': 'ABCDEF',
-        'graphql_api_key': 'a1b2c3'
+    event = {"body" : json.dumps( {
+        "s3_bucket_name": "po-extract-ingresspos3bucket-14xl4r5co34p1",
+        "s3_key_name": "incoming/faktura-117044.pdf",
+        "graphql_api_endpoint": "ABCDEF",
+        "graphql_api_key": "a1b2c3"
     })}
                                   
     print("Running locally")
