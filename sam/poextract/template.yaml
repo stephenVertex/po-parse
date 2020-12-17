@@ -20,6 +20,8 @@ Resources:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: po_extract/
+      Policies:
+      - arn:aws:iam::aws:policy/AmazonTextractFullAccess
       Handler: app.lambda_handler
       Runtime: python3.8
       Events:
@@ -27,7 +29,7 @@ Resources:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /po_extract
-            Method: get
+            Method: post
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function

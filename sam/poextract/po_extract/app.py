@@ -6,6 +6,8 @@ import requests
 import os
 from collections import OrderedDict
 import time
+import numpy as np
+import pandas as pd
 
 s3 = boto3.client('s3')
 textract = boto3.client('textract')
@@ -187,8 +189,9 @@ def lambda_handler(event, context):
         Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
     """
 
+    event_body = json.loads(event['body'])
     print("EVENT:")
-    print(event)
+    print(event_body)
 
 
     # try:
@@ -199,7 +202,7 @@ def lambda_handler(event, context):
 
     #     raise e
 
-    recs = flow(event, textract, cache = True)
+    recs = flow(event_body, textract, cache = True)
     rval = {
         "statusCode": 200,
         "body": json.dumps({
@@ -211,13 +214,13 @@ def lambda_handler(event, context):
 
     return rval
 if __name__ == "__main__":
-    event = {
+    event = {'body' : json.dumps( {
         's3_bucket_name': 'po-extract-ingresspos3bucket-14xl4r5co34p1',
         's3_key_name': 'incoming/faktura-117044.pdf',
         'graphql_api_endpoint': 'ABCDEF',
         'graphql_api_key': 'a1b2c3'
-    }
-
+    })}
+                                  
     print("Running locally")
     session = boto3.Session(profile_name='bredal2')
     s3 = session.client('s3')
