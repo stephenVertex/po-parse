@@ -42,7 +42,10 @@ def download_file_to_tmp(s3, bucket, key, cache = False):
     return(tmp_path)
 
 def extract_tables(resp):
-    if ['Blocks'] not in resp.keys():
+    """
+    Returns a list of tables as pandas dataframes
+    """
+    if 'Blocks' not in resp.keys():
         return(None)
     tables = list(filter(lambda x: x['BlockType'] == 'TABLE', resp['Blocks']))
     blockmap = {}
@@ -73,12 +76,13 @@ def extract_tables(resp):
                 pd_row = cell['RowIndex'] - 1
                 pd_col = cell['ColumnIndex'] - 1       
                 df.loc[pd_row, pd_col] = " ".join(cell_words)
+                
+        t_unwrap.append(df)
+    return(t_unwrap)
 
 def process_file(event, textract):
     bucket   = event['s3_bucket_name']
     document = event['s3_key_name']
-
-
     
     a_start = textract.start_document_analysis(
         DocumentLocation={'S3Object': {'Bucket': bucket, 'Name': document}},
@@ -99,10 +103,20 @@ def process_file(event, textract):
     return(response2)
     
 
-def flow(event, s3, textract, cache = False):
+def flow(event, textract, cache = False):
     # fpath = download_file_to_tmp(s3, event['s3_bucket_name'], event['s3_key_name'], cache = cache)
-    recs = process_file(fpath, textract)
-    return(recs)
+    recs = process_file(event, textract)
+    rval = { "JobStatus" : recs['JobStatus'],
+             "tables"    : None }
+    if recs['JobStatus'] == 'SUCCEEDED':
+        ptables = extract_tables(recs)
+        json_t  = lambda x: x.to_json(orient='records')
+        jtables = [json_t(t) for t in ptables]
+        j2 = []
+        for j in jtables:
+            j2.append(json.loads(j))
+        rval['tables'] = j2
+    return(rval)
 
 
 def lambda_handler(event, context):
@@ -139,9 +153,8 @@ def lambda_handler(event, context):
 
     #     raise e
 
-    recs = flow(event, s3, textract, cache = True)
-
-    return {
+    recs = flow(event, textract, cache = True)
+    rval = {
         "statusCode": 200,
         "body": json.dumps({
             "message"  : "hello world",
@@ -150,6 +163,7 @@ def lambda_handler(event, context):
         }),
     }
 
+    return rval
 if __name__ == "__main__":
     event = {
         's3_bucket_name': 'po-extract-ingresspos3bucket-14xl4r5co34p1',
@@ -162,7 +176,7 @@ if __name__ == "__main__":
     session = boto3.Session(profile_name='bredal2')
     s3 = session.client('s3')
     textract = boto3.client('textract')
-    recs = flow(event, s3, textract, cache = True)
+    recs = flow(event, textract, cache = True)
     print(recs)
 
 
