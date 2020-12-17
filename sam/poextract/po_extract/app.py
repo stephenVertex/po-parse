@@ -116,8 +116,54 @@ def flow(event, textract, cache = False):
         for j in jtables:
             j2.append(json.loads(j))
         rval['tables'] = j2
+        rval['proc_tables'] = coalesce_tables(rval['tables'])
     return(rval)
 
+
+def coalesce_tables(tables):
+    """ 
+    This is from the "tables" collection in recs
+    """
+    ## For each table, we can:
+    ## Process the names in the first row, as column names
+    ## If we have a "quantity" column, convert this from euro style to float
+
+    ## If the column names are the same, we can append one to the other.
+    
+    proc_tables = OrderedDict()
+    most_recent_key = None
+    for tn,t in enumerate(tables):
+        for i, r in enumerate(t):
+            ##print(f"Table {tn}, Row number {i}")
+            col_accessors = [str(x) for x in range(len(r))]
+            ## Get the processed row names
+            if i == 0:                
+                cnames = {}
+                for c in col_accessors:
+                    cnames[c] = r[c].lower().strip().replace(" ", "")
+                continue
+            ## Now, cnames was defined from iteration i==0
+            rec = {}
+            for c in col_accessors:
+                rec[cnames[c]] = r[c]
+
+            fixweight = lambda x: float(x.replace(",", "."))
+            
+            
+            if rec['netweight'] is not None:
+                rec['netweight'] = fixweight(rec['netweight'])
+
+            if rec['no.'] is not None:
+                ## new record
+                most_recent_key = rec['no.']
+                proc_tables[most_recent_key] = rec
+            else:
+                ## append the description to previous
+                if rec['description'] is not None:
+                    proc_tables[most_recent_key]['description'] = proc_tables[most_recent_key]['description'] + " " + rec['description']
+
+
+    return(list(proc_tables.values()))
 
 def lambda_handler(event, context):
     """Sample pure Lambda function
