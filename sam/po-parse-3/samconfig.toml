@@ -2,9 +2,9 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "poparse3"
+stack_name = "poparse3-2"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1xgk5mo7aewjk"
-s3_prefix = "poparse3"
+s3_prefix = "poparse3-2"
 image_repository = "750813457616.dkr.ecr.ap-southeast-2.amazonaws.com/bredal/tabularunner"
 region = "ap-southeast-2"
 confirm_changeset = true

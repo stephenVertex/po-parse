@@ -2,9 +2,9 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "po-parse-2"
+stack_name = "po-extract"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1xgk5mo7aewjk"
-s3_prefix = "po-parse-2"
+s3_prefix = "po-extract"
 region = "ap-southeast-2"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"

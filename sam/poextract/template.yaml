@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  po-parse-sam2
+  poextract
 
-  Sample SAM Template for po-parse-sam2
+  Sample SAM Template for poextract
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -12,45 +12,39 @@ Globals:
 
 Resources:
 
-  IngressS3Bucket2:
+  IngressPOS3Bucket:
     Type: AWS::S3::Bucket
 
 
-  POParse2Function:
+  POExtractFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: po_parse/
+      CodeUri: po_extract/
       Handler: app.lambda_handler
-      Runtime: python3.8        
-      Policies:
-        - AmazonS3ReadOnlyAccess
+      Runtime: python3.8
       Events:
-        ## This is how we enter the function.
-        ## We need to have an input which contains
-        ParsePostReq:
+        POExtract:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /po_parse2
-            Method: post
+            Path: /po_extract
+            Method: get
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  POParse2API:
-    Description: "API Gateway endpoint URL PO Parse 2 Function"
+  POExtractApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  POParse2Function:
-    Description: "PO Parse 2 Lambda Function ARN"
-    Value: !GetAtt POParse2Function.Arn
-  POParse2FunctionIamRole:
-    Description: "Implicit IAM Role created for PO Parse 2 function"
-    Value: !GetAtt POParse2FunctionRole.Arn
-  IngressS3Bucket2:
+  POExtractFunction:
+    Description: "PO Extract Lambda Function ARN"
+    Value: !GetAtt POExtractFunction.Arn
+  POExtractFunctionIamRole:
+    Description: "PO Extract IAM Role created for Hello World function"
+    Value: !GetAtt POExtractFunctionRole.Arn
+  IngressPOS3Bucket:
     Description: "ARN of S3 Bucket"
-    Value: !GetAtt IngressS3Bucket2.Arn
+    Value: !GetAtt IngressPOS3Bucket.Arn
     Export:
-      Name: IngressS3Bucket2Arn
-  
-
-
+      Name: IngressPOS3BucketArn
+        
