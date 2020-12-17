@@ -41,6 +41,38 @@ def download_file_to_tmp(s3, bucket, key, cache = False):
     print(f"Downloaded s3://{bucket}/{key} to {tmp_path}")
     return(tmp_path)
 
+def extract_tables(resp):
+    if ['Blocks'] not in resp.keys():
+        return(None)
+    tables = list(filter(lambda x: x['BlockType'] == 'TABLE', resp['Blocks']))
+    blockmap = {}
+    for b in resp['Blocks']:
+        blockmap[b['Id']] = b
+
+    t_unwrap = []
+    for t in tables:
+        cells = list(filter(lambda x: x['BlockType'] == 'CELL', resp['Blocks']))
+        max_row_index = max([x['RowIndex'] for x in cells])
+        min_row_index = min([x['RowIndex'] for x in cells])
+        max_col_index = max([x['ColumnIndex'] for x in cells])
+        min_col_index = min([x['ColumnIndex'] for x in cells])        
+
+        df = pd.DataFrame(np.empty((max_row_index,max_col_index),dtype=object))
+        for cell in cells:
+            if 'Relationships' in cell.keys():
+                rels = cell['Relationships']
+                child_rels = list(filter(lambda x: x['Type'] == 'CHILD', rels))
+                cell_words = []
+                for c in child_rels:
+                    chs = c['Ids']
+                    for child_id in chs:
+                        bmx = blockmap[child_id]
+                        if bmx['BlockType'] == 'WORD':
+                            cell_words.append(bmx['Text'])
+
+                pd_row = cell['RowIndex'] - 1
+                pd_col = cell['ColumnIndex'] - 1       
+                df.loc[pd_row, pd_col] = " ".join(cell_words)
 
 def process_file(event, textract):
     bucket   = event['s3_bucket_name']
