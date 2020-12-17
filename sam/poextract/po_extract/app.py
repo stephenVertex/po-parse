@@ -56,7 +56,15 @@ def extract_tables(resp):
 
     t_unwrap = []
     for t in tables:
-        cells = list(filter(lambda x: x['BlockType'] == 'CELL', resp['Blocks']))
+ 
+        # cells = list(filter(lambda x: x['BlockType'] == 'CELL', resp['Blocks']))
+        cell_rels = t['Relationships']
+        cell_child_rels = list(filter(lambda x: x['Type'] == 'CHILD', cell_rels))
+        cell_ids = []
+        for cr in cell_child_rels:
+            cell_ids = cell_ids + cr['Ids']
+
+        cells = [blockmap[c_id] for c_id in cell_ids]
         max_row_index = max([x['RowIndex'] for x in cells])
         min_row_index = min([x['RowIndex'] for x in cells])
         max_col_index = max([x['ColumnIndex'] for x in cells])
@@ -213,14 +221,16 @@ def lambda_handler(event, context):
     }
 
     return rval
+
 if __name__ == "__main__":
-    event = {"body" : json.dumps( {
+    event_outer = {"body" : json.dumps( {
         "s3_bucket_name": "po-extract-ingresspos3bucket-14xl4r5co34p1",
         "s3_key_name": "incoming/faktura-117044.pdf",
         "graphql_api_endpoint": "ABCDEF",
         "graphql_api_key": "a1b2c3"
     })}
                                   
+    event = json.loads(event_outer["body"])
     print("Running locally")
     session = boto3.Session(profile_name='bredal2')
     s3 = session.client('s3')
